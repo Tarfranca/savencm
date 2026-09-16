@@ -1,0 +1,1257 @@
+<title>SAVE NCM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --sidebar: #0F172A;
+    --sidebar-text: #94A3B8;
+    --sidebar-active: #2563EB;
+    --sidebar-active-bg: rgba(37,99,235,.12);
+    --bg: #F1F5F9;
+    --card: #FFFFFF;
+    --border: #E2E8F0;
+    --border-strong: #CBD5E1;
+    --text: #0F172A;
+    --text-2: #475569;
+    --text-3: #94A3B8;
+    --accent: #2563EB;
+    --accent-dark: #1D4ED8;
+    --accent-bg: #EFF6FF;
+    --accent-border: #BFDBFE;
+    --success: #047857;
+    --success-bg: #ECFDF5;
+    --success-border: #A7F3D0;
+    --danger: #DC2626;
+    --danger-bg: #FEF2F2;
+    --amber: #B45309;
+    --amber-bg: #FFFBEB;
+    --amber-border: #FDE68A;
+    --thead: #0F172A;
+    --thead-text: #CBD5E1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B1120;
+      --card: #131E30;
+      --border: #1E2D40;
+      --border-strong: #2A3D55;
+      --text: #E8EFF8;
+      --text-2: #8AA0BC;
+      --text-3: #4A6480;
+      --accent-bg: #0F2044;
+      --accent-border: #1E3A6E;
+      --success-bg: #052E16;
+      --success-border: #065F46;
+      --danger-bg: #2A0A0A;
+      --amber-bg: #1A1000;
+      --amber-border: #78350F;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1120;
+    --card: #131E30;
+    --border: #1E2D40;
+    --border-strong: #2A3D55;
+    --text: #E8EFF8;
+    --text-2: #8AA0BC;
+    --text-3: #4A6480;
+    --accent-bg: #0F2044;
+    --accent-border: #1E3A6E;
+    --success-bg: #052E16;
+    --success-border: #065F46;
+    --danger-bg: #2A0A0A;
+    --amber-bg: #1A1000;
+    --amber-border: #78350F;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: var(--sidebar);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  .sidebar-logo {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .sidebar-logo-text {
+    font-size: 13px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: .03em;
+  }
+  .sidebar-logo-sub {
+    font-size: 9px;
+    font-weight: 600;
+    color: #475569;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .sidebar-nav {
+    padding: 10px 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background .15s, color .15s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.06); color: #CBD5E1; }
+  .nav-item.active { background: var(--sidebar-active-bg); color: #FFFFFF; font-weight: 600; }
+  .nav-item.active .nav-dot { background: var(--sidebar-active); }
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #334155;
+    flex-shrink: 0;
+    transition: background .15s;
+  }
+  .sidebar-footer {
+    padding: 10px 16px;
+    border-top: 1px solid rgba(255,255,255,.06);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #334155;
+  }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-breadcrumb {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .topbar-breadcrumb span { color: var(--text-2); }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge-regime {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,#2563EB,#7C3AED);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #FFF;
+  }
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 24px 32px;
+  }
+
+  /* ── Screen switcher ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Typography ── */
+  .page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+  .page-subtitle {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  /* ── Cards / panels ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .pill-green { color: var(--success); background: var(--success-bg); border-color: var(--success-border); }
+  .pill-blue { color: var(--accent); background: var(--accent-bg); border-color: var(--accent-border); }
+  .pill-red { color: var(--danger); background: var(--danger-bg); border-color: #FECACA; }
+  .pill-gray { color: var(--text-2); background: var(--bg); border-color: var(--border); }
+  .pill-amber { color: var(--amber); background: var(--amber-bg); border-color: var(--amber-border); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity .15s;
+  }
+  .btn:hover { opacity: .88; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-dark { background: #004AC6; color: #fff; }
+  .btn-outline { background: var(--card); border: 1px solid var(--border-strong); color: var(--text-2); }
+
+  /* ── Tables ── */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table thead tr {
+    background: var(--thead);
+    height: 36px;
+  }
+  .data-table thead th {
+    padding: 0 10px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--thead-text);
+    white-space: nowrap;
+  }
+  .data-table thead th.r { text-align: right; }
+  .data-table thead th.c { text-align: center; }
+  .data-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  .data-table tbody tr:hover { background: rgba(37,99,235,.03); }
+  .data-table tbody td {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .data-table tbody td.r { text-align: right; }
+  .data-table tbody td.c { text-align: center; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .ncm-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  /* ── Nova Operação ── */
+  .upload-zone {
+    border: 2px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    margin-bottom: 20px;
+    background: var(--card);
+    transition: border-color .2s, background .2s;
+    cursor: pointer;
+  }
+  .upload-zone:hover { border-color: var(--accent); background: var(--accent-bg); }
+  .upload-icon {
+    width: 44px; height: 44px;
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 20px;
+  }
+  .secondary-cards {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .sec-card {
+    flex: 1;
+    min-width: 100px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color .15s;
+  }
+  .sec-card:hover { border-color: var(--accent); color: var(--accent); }
+  .sec-card-icon { font-size: 16px; display: block; margin-bottom: 4px; }
+
+  /* ── Buscar NCMs ── */
+  .search-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .mode-toggle {
+    display: flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 2px;
+    width: fit-content;
+    margin-bottom: 12px;
+    gap: 2px;
+  }
+  .mode-btn {
+    padding: 5px 14px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text-3);
+    transition: all .15s;
+  }
+  .mode-btn.active {
+    background: var(--card);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  }
+  .search-input-wrap {
+    position: relative;
+  }
+  .search-input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--accent); background: var(--card); }
+  .search-icon {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    color: var(--text-3);
+    pointer-events: none;
+  }
+  .chips-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .chip-label { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+  .chip {
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 11px;
+    color: var(--text-2);
+    cursor: pointer;
+  }
+  .chip.active { background: var(--accent-bg); border-color: var(--accent-border); color: var(--accent); font-weight: 600; }
+
+  /* expanded drawer */
+  .drawer-row { background: #F8FAFC; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .drawer-row td { padding: 12px; }
+  .drawer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .drawer-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+  }
+  .drawer-panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex; align-items: center; gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .tax-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-2); margin-bottom: 6px; }
+  .tax-row strong { color: var(--text); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .tax-total { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text); padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px; }
+  .tax-total strong { color: var(--success); font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+
+  /* ── Resultado ── */
+  .context-bar {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .ctx-item { font-size: 11px; color: var(--text-2); }
+  .ctx-item strong { color: var(--text); font-weight: 600; }
+  .ctx-sep { color: var(--border-strong); font-size: 14px; }
+
+  .sticky-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sticky-bar-info { font-size: 12px; color: var(--text-2); }
+  .sticky-bar-info strong { color: var(--success); }
+  .sticky-bar-actions { display: flex; gap: 8px; }
+
+  /* ── Comparativo ── */
+  .eco-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .eco-main { display: flex; align-items: center; gap: 14px; }
+  .eco-icon {
+    width: 44px; height: 44px;
+    background: var(--success);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .eco-label { font-size: 10px; font-weight: 700; color: var(--success); text-transform: uppercase; letter-spacing: .06em; }
+  .eco-value { font-size: 26px; font-weight: 800; color: #065F46; font-family: 'JetBrains Mono', monospace; letter-spacing: -.02em; }
+  .eco-value span { font-size: 14px; font-weight: 600; color: var(--success); }
+  .eco-sub { font-size: 11px; color: #047857; margin-top: 2px; }
+  .eco-stats { display: flex; gap: 10px; }
+  .eco-stat {
+    background: rgba(255,255,255,.7);
+    border: 1px solid var(--success-border);
+    border-radius: 7px;
+    padding: 8px 14px;
+    text-align: center;
+  }
+  .eco-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 700; }
+  .eco-stat-value { font-size: 16px; font-weight: 800; color: var(--success); font-family: 'JetBrains Mono', monospace; }
+
+  .comp-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .comp-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .comp-grid { display: grid; grid-template-columns: 1fr 56px 1fr; gap: 10px; align-items: stretch; }
+  .comp-side {
+    border-radius: 7px;
+    padding: 12px;
+  }
+  .comp-side.old { background: var(--bg); border: 1px solid var(--border-strong); }
+  .comp-side.new { background: var(--accent-bg); border: 1px solid var(--accent-border); }
+  .comp-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .comp-arrow {
+    width: 32px; height: 32px;
+    background: var(--success-bg);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--success);
+  }
+  .comp-delta { font-size: 13px; font-weight: 800; color: var(--success); font-family: 'JetBrains Mono', monospace; }
+  .comp-delta-label { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 600; }
+  .comp-side-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .comp-side.old .comp-side-label { color: var(--text-3); }
+  .comp-side.new .comp-side-label { color: var(--accent); }
+  .comp-ncm { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .comp-side.old .comp-ncm { color: var(--text-2); }
+  .comp-side.new .comp-ncm { color: var(--text); }
+  .comp-aliq { font-size: 10px; color: var(--text-3); }
+  .comp-carga {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-top: 8px; border-top: 1px solid var(--border); margin-top: 8px;
+  }
+  .comp-carga-label { font-size: 11px; color: var(--text-2); }
+  .comp-carga-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; }
+  .comp-side.old .comp-carga-val { color: var(--text-2); }
+  .comp-side.new .comp-carga-val { color: var(--success); }
+
+  .amber-warn {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: #92400E;
+    margin-bottom: 10px;
+  }
+
+  /* header divider row */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .page-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* results header row */
+  .results-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; font-size: 11px;
+  }
+  .results-meta strong { color: var(--text); }
+
+  /* ── Nova Operação two-col ── */
+  .two-col { display: grid; grid-template-columns: 7fr 5fr; gap: 16px; }
+  .panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
+
+  .status-concluido { color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+  .status-processando { color: #2563EB; background: #EFF6FF; border: 1px solid #BFDBFE; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+
+  .alert-card {
+    border-left: 3px solid;
+    padding: 10px 12px;
+    border-radius: 0 6px 6px 0;
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .alert-card.opportunity { border-left-color: var(--success); }
+  .alert-card.risk { border-left-color: var(--danger); }
+  .alert-title { font-size: 12px; font-weight: 600; color: var(--text); }
+  .alert-body { font-size: 11px; color: var(--text-2); margin-top: 3px; }
+  .alert-econ { font-size: 11px; font-weight: 700; color: var(--success); margin-top: 4px; }
+
+  /* ── Reclassified badge ── */
+  .reclassified {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 600;
+    color: var(--accent); background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: 4px; padding: 1px 6px;
+  }
+
+  /* ── Footer bar ── */
+  .footer-bar {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-2);
+  }
+
+  /* scrollbar */
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-text">SAVE NCM</div>
+    <div class="sidebar-logo-sub">Classificação Fiscal</div>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-item" onclick="show('nova-operacao',this)">
+      <span class="nav-dot"></span> Nova Operação
+    </button>
+    <button class="nav-item" onclick="show('resultado',this)">
+      <span class="nav-dot"></span> Resultado
+    </button>
+    <button class="nav-item" onclick="show('comparativo',this)">
+      <span class="nav-dot"></span> Comparativo
+    </button>
+    <button class="nav-item active" onclick="show('buscar-ncms',this)">
+      <span class="nav-dot"></span> Buscar NCMs
+    </button>
+    <button class="nav-item" onclick="show('perfil',this)">
+      <span class="nav-dot"></span> Perfil Fiscal
+    </button>
+  </nav>
+  <div class="sidebar-footer">Base TEC 2026</div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-breadcrumb" id="breadcrumb">
+      SAVE NCM &rsaquo; <span>Buscar NCMs</span>
+    </div>
+    <div class="topbar-right">
+      <span class="badge-regime">Lucro Real · SP</span>
+      <div class="avatar">TF</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ BUSCAR NCMs ══ -->
+    <div class="screen active" id="screen-buscar-ncms">
+      <div class="page-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <h1 class="page-title">Buscar NCMs</h1>
+            <span class="pill pill-green">Base TEC 2026 Vigente</span>
+          </div>
+          <p class="page-subtitle">Consulta com cruzamento de alíquotas aduaneiras, notas NESH e ex-tarifários ativos</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline">↑ Upload de Invoice</button>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <div class="mode-toggle">
+          <button class="mode-btn active">Por descrição</button>
+          <button class="mode-btn">Por código NCM</button>
+        </div>
+        <div class="search-input-wrap">
+          <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input class="search-input" value="filtro" readonly>
+        </div>
+        <div class="chips-row">
+          <span class="chip-label">Exemplos:</span>
+          <span class="chip active">filtro</span>
+          <span class="chip">bomba centrífuga</span>
+          <span class="chip">painel elétrico</span>
+          <span class="chip">válvula</span>
+        </div>
+      </div>
+
+      <div class="results-meta">
+        <div><strong>5</strong> resultados para <strong>"filtro"</strong></div>
+        <div style="color:var(--text-3)">Regime: <strong style="color:var(--text-2)">Lucro Real — SP</strong></div>
+      </div>
+
+      <div class="card" style="overflow:hidden;margin-bottom:16px">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:36px"></th>
+                <th>Código NCM</th>
+                <th>Descrição TEC 2026</th>
+                <th class="r">II</th>
+                <th class="r">IPI</th>
+                <th class="r">PIS</th>
+                <th class="r">COFINS</th>
+                <th class="r">Carga Efetiva</th>
+                <th class="c">Ex-Tarifário</th>
+                <th class="c">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Row 1: normal -->
+              <tr>
+                <td class="c" style="color:var(--text-3)">▾</td>
+                <td><span class="ncm-chip">5601.22.91</span></td>
+                <td>
+                  <div style="font-weight:600;font-size:12px">Cilindros para filtros de cigarros</div>
+                  <div style="font-size:10px;color:var(--text-3);margin-top:1px">Cap. 56</div>
+                </td>
+                <td class="r mono" style="font-weight:600">16,2%</td>
+                <td class="r mono" style="color:var(--text-2)">19,5%</td>
+                <td class="r mono" style="color:var(--text-2)">2,10%</td>
+                <td class="r mono" style="color:var(--text-2)">9,65%</td>
+                <td class="r mono" style="font-weight:700">76,3%</td>
+                <td class="c"><span class="pill pill-gray">Não</span></td>
+                <td class="c"><button class="btn btn-primary" style="font-size:10px;padding:4px 10px">Usar →</button></td>
+              </tr>
+              <!-- Row 2: EXPANDED -->
+              <tr style="background:rgba(37,99,235,.04);cursor:pointer">
+                <td class="c" style="color:var(--accent)">▴</td>
+                <td><span class="ncm-chip" style="border-color:var(--accent-border);background:var(--accent-bg);color:var(--accent)">8421.29.30</span></td>
+                <td>
+                  <div style="font-weight:600;font-size:12px">Filtros-prensa</div>
+                  <div style="font-size:10px;color:var(--text-3);margin-top:1px">Cap. 84 — Máquinas</div>
+                </td>
+                <td class="r mono" style="font-weight:600">20,0%</td>
+                <td class="r mono" style="color:var(--text-2)">0,0%</td>
+                <td class="r mono" style="color:var(--text-2)">2,10%</td>
+                <td class="r mono" style="color:var(--text-2)">9,65%</td>
+                <td class="r mono" style="font-weight:700">52,4%</td>
+                <td class="c"><span class="pill pill-gray">Não</span></td>
+                <td class="c"><button class="btn btn-primary" style="font-size:10px;padding:4px 10px">Usar →</button></td>
+              </tr>
+              <!-- Drawer row -->
+              <tr class="drawer-row">
+                <td colspan="10">
+                  <div class="drawer-grid">
+                    <div class="drawer-panel">
+                      <div class="drawer-panel-title">
+                        <svg width="14" height="14" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        Notas Explicativas NESH
+                      </div>
+                      <div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-2);font-style:italic;line-height:1.6">
+                        Filtros-prensa são aparelhos mecânicos nos quais a filtragem se efetua por compressão do material a filtrar. Constituem uma série de câmaras ou quadros dispostos entre placas porosas. Classificam-se aqui inclusive as centrifugadoras e purificadores de líquidos.
+                      </div>
+                    </div>
+                    <div class="drawer-panel">
+                      <div class="drawer-panel-title">
+                        <svg width="14" height="14" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        Detalhamento Tributário — ref. CIF=100
+                      </div>
+                      <div class="tax-row"><span>II (Imposto de Importação)</span><strong>20,0%</strong></div>
+                      <div class="tax-row"><span>IPI (sobre CIF+II)</span><strong>0,0%</strong></div>
+                      <div class="tax-row"><span>PIS-Importação</span><strong>2,10%</strong></div>
+                      <div class="tax-row"><span>COFINS-Importação</span><strong>9,65%</strong></div>
+                      <div class="tax-row"><span>ICMS-SP (gross-up 12%)</span><strong>12,00%</strong></div>
+                      <div class="tax-total"><span>Carga Efetiva s/ CIF</span><strong>52,4%</strong></div>
+                      <div style="margin-top:10px;text-align:right">
+                        <button class="btn btn-dark" style="font-size:11px">✓ Usar este NCM</button>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <!-- Rows 3-5 -->
+              <tr>
+                <td class="c" style="color:var(--text-3)">▾</td>
+                <td><span class="ncm-chip">8421.31.00</span></td>
+                <td>
+                  <div style="font-weight:600;font-size:12px">Filtros de entrada de ar p/ motores de ignição</div>
+                  <div style="font-size:10px;color:var(--text-3);margin-top:1px">Cap. 84 — Máquinas</div>
+                </td>
+                <td class="r mono" style="font-weight:600">16,0%</td>
+                <td class="r mono" style="color:var(--text-2)">5,2%</td>
+                <td class="r mono" style="color:var(--text-2)">2,10%</td>
+                <td class="r mono" style="color:var(--text-2)">9,65%</td>
+                <td class="r mono" style="font-weight:700">55,0%</td>
+                <td class="c"><span class="pill pill-gray">Não</span></td>
+                <td class="c"><button class="btn btn-primary" style="font-size:10px;padding:4px 10px">Usar →</button></td>
+              </tr>
+              <tr>
+                <td class="c" style="color:var(--text-3)">▾</td>
+                <td><span class="ncm-chip">8421.32.00</span></td>
+                <td>
+                  <div style="font-weight:600;font-size:12px">Conversores catalíticos e filtros de partículas</div>
+                  <div style="font-size:10px;color:var(--text-3);margin-top:1px">Cap. 84 — Máquinas</div>
+                </td>
+                <td class="r mono" style="font-weight:600">18,0%</td>
+                <td class="r mono" style="color:var(--text-2)">3,3%</td>
+                <td class="r mono" style="color:var(--text-2)">2,10%</td>
+                <td class="r mono" style="color:var(--text-2)">9,65%</td>
+                <td class="r mono" style="font-weight:700">54,7%</td>
+                <td class="c"><span class="pill pill-gray">Não</span></td>
+                <td class="c"><button class="btn btn-primary" style="font-size:10px;padding:4px 10px">Usar →</button></td>
+              </tr>
+              <tr>
+                <td class="c" style="color:var(--text-3)">▾</td>
+                <td><span class="ncm-chip">8421.39.10</span></td>
+                <td>
+                  <div style="font-weight:600;font-size:12px">Filtros eletrostáticos</div>
+                  <div style="font-size:10px;color:var(--text-3);margin-top:1px">Cap. 84 — Máquinas</div>
+                </td>
+                <td class="r mono" style="font-weight:600">20,0%</td>
+                <td class="r mono" style="color:var(--text-2)">0,0%</td>
+                <td class="r mono" style="color:var(--text-2)">2,10%</td>
+                <td class="r mono" style="color:var(--text-2)">9,65%</td>
+                <td class="r mono" style="font-weight:700">52,4%</td>
+                <td class="c"><span class="pill pill-gray">Não</span></td>
+                <td class="c"><button class="btn btn-primary" style="font-size:10px;padding:4px 10px">Usar →</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="footer-bar">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="14" height="14" fill="var(--accent)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+          Tabela TEC 2026 — CAMEX. Carga efetiva calculada sobre CIF=100, Lucro Real, ICMS-SP 12%.
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3)">15 set. 2026</span>
+      </div>
+    </div>
+
+    <!-- ══ NOVA OPERAÇÃO ══ -->
+    <div class="screen" id="screen-nova-operacao">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">O que você tem disponível?</h1>
+          <p class="page-subtitle">A IA lê o documento e classifica — sem formulários.</p>
+        </div>
+      </div>
+
+      <div class="upload-zone">
+        <div class="upload-icon">📄</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Arraste a invoice aqui</div>
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:14px">PDF · JPEG · PNG · XLSX — qualquer formato</div>
+        <button class="btn btn-primary">Selecionar arquivo</button>
+        <button class="btn btn-outline" style="margin-left:8px">Testar com Invoice Demo</button>
+      </div>
+
+      <div class="secondary-cards" style="margin-bottom:20px">
+        <div class="sec-card"><span class="sec-card-icon">📦</span>Packing List</div>
+        <div class="sec-card"><span class="sec-card-icon">📸</span>Foto</div>
+        <div class="sec-card"><span class="sec-card-icon">📖</span>Catálogo</div>
+        <div class="sec-card"><span class="sec-card-icon">🔗</span>Link URL</div>
+        <div class="sec-card"><span class="sec-card-icon">💬</span>Descrever no chat</div>
+      </div>
+
+      <div class="two-col">
+        <div class="card" style="padding:14px">
+          <div class="section-header">
+            <span class="panel-title">Operações recentes</span>
+            <a style="font-size:11px;font-weight:600;color:var(--accent);text-decoration:none">Ver todas</a>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Documento</th>
+                <th class="r">Origem</th>
+                <th class="r">Data</th>
+                <th class="r">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:600;font-size:12px;color:var(--accent)">invoice_test_001.pdf</td>
+                <td class="r" style="color:var(--text-2);font-size:11px">China</td>
+                <td class="r" style="color:var(--text-3);font-size:11px">14 set. 14:32</td>
+                <td class="r"><span class="status-concluido">Concluído</span></td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;font-size:12px;color:var(--text-2)">PL_Fornecedor_Lian.pdf</td>
+                <td class="r" style="color:var(--text-2);font-size:11px">Alemanha</td>
+                <td class="r" style="color:var(--text-3);font-size:11px">12 set. 09:15</td>
+                <td class="r"><span class="status-concluido">Concluído</span></td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;font-size:12px;color:var(--text-2)">invoice_ABB_2024.xlsx</td>
+                <td class="r" style="color:var(--text-2);font-size:11px">EUA</td>
+                <td class="r" style="color:var(--text-3);font-size:11px">10 set. 16:47</td>
+                <td class="r"><span class="status-processando">Processando</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="padding:14px">
+          <div class="section-header">
+            <span class="panel-title">Alertas pendentes</span>
+            <span style="font-size:11px;color:var(--text-3)">2 ativos</span>
+          </div>
+          <div class="alert-card opportunity">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="alert-title">NCM reclassificado: 8537.10.99 → 8537.10.20</div>
+              <span class="pill pill-green" style="flex-shrink:0;margin-left:8px">Benefício</span>
+            </div>
+            <div class="alert-body">Item "Controlador programável PLC" foi reclassificado. Risco: baixo.</div>
+            <div class="alert-econ">Economia potencial: R$ 4.250,00</div>
+          </div>
+          <div class="alert-card risk">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="alert-title">NCM reclassificado: 8413.91.00 → 8413.70.90</div>
+              <span class="pill pill-red" style="flex-shrink:0;margin-left:8px">Risco RFB</span>
+            </div>
+            <div class="alert-body">Item "Bomba centrífuga de estágio único" foi reclassificado. Risco: alto.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RESULTADO ══ -->
+    <div class="screen" id="screen-resultado">
+      <div class="page-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="pill pill-blue">Classificação IA</span>
+            <span style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace">invoice_test_001.pdf</span>
+          </div>
+          <h1 class="page-title" style="margin-top:4px">Resultado da Classificação</h1>
+          <p class="page-subtitle">3 itens classificados · 2 reclassificados · 1 pendente de revisão</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline">Ver Comparativo →</button>
+          <button class="btn btn-dark">↓ Exportar DI</button>
+        </div>
+      </div>
+
+      <div class="context-bar">
+        <div class="ctx-item">Origem: <strong>China</strong></div>
+        <span class="ctx-sep">|</span>
+        <div class="ctx-item">Modal: <strong>Marítimo</strong></div>
+        <span class="ctx-sep">|</span>
+        <div class="ctx-item">Incoterm: <strong>CIF</strong></div>
+        <span class="ctx-sep">|</span>
+        <div class="ctx-item">Câmbio: <strong>R$ 5,42</strong></div>
+        <span class="ctx-sep">|</span>
+        <div class="ctx-item">Total FOB: <strong>R$ 128.474,00</strong></div>
+      </div>
+
+      <div class="card" style="overflow:hidden;margin-bottom:12px">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:30px"></th>
+                <th>#</th>
+                <th>Descrição / P/N</th>
+                <th>NCM Sugerido</th>
+                <th class="r">Peso (kg)</th>
+                <th class="r">Qtd</th>
+                <th class="r">FOB USD</th>
+                <th class="r">II</th>
+                <th class="r">IPI</th>
+                <th class="r">Carga</th>
+                <th class="c">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Item 1 -->
+              <tr>
+                <td class="c" style="color:var(--accent)">▴</td>
+                <td style="font-weight:600;font-size:11px;color:var(--text-3)">01</td>
+                <td>
+                  <div style="font-weight:600;font-size:12px">Controlador programável PLC</div>
+                  <div style="font-size:10px;color:var(--text-3)">P/N: SIMATIC-S7-1200</div>
+                </td>
+                <td>
+                  <span class="ncm-chip">8537.10.20</span>
+                  <span class="reclassified" style="margin-left:4px;font-size:9px">↑ 8537.10.99</span>
+                </td>
+                <td class="r mono">42,0</td>
+                <td class="r mono">12</td>
+                <td class="r mono">12.500,00</td>
+                <td class="r mono" style="font-weight:600">14,0%</td>
+                <td class="r mono">5,0%</td>
+                <td class="r mono" style="font-weight:700;color:var(--accent)">52,1%</td>
+                <td class="c"><span class="pill pill-blue">Revisar</span></td>
+              </tr>
+              <!-- Drawer Item 1 -->
+              <tr class="drawer-row">
+                <td colspan="11">
+                  <div class="drawer-grid">
+                    <div class="drawer-panel">
+                      <div class="drawer-panel-title">
+                        <svg width="14" height="14" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Descrição Otimizada para DI
+                      </div>
+                      <div style="font-size:12px;color:var(--text);line-height:1.6;font-weight:500">
+                        CONTROLADOR LOGICO PROGRAMAVEL, SIMATIC S7-1200, CPU 1214C AC/DC/RLY, 14 ENTRADAS DIGITAIS, 10 SAIDAS A RELE, 2 ENTRADAS ANALOGICAS
+                      </div>
+                      <div style="margin-top:8px;font-size:11px;color:var(--text-3);font-style:italic;line-height:1.5">
+                        <strong style="color:var(--text-2)">Fundamentação NESH:</strong> Aparelhos para comando ou distribuição elétrica, reguladores de tensão e dispositivos programáveis baseados em microprocessador — NCM 8537.10.20, conforme Nota 5(B) do Cap. 85 e NESH 85.37.
+                      </div>
+                    </div>
+                    <div class="drawer-panel">
+                      <div class="drawer-panel-title">
+                        <svg width="14" height="14" fill="none" stroke="var(--accent)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        Detalhamento Tributário
+                      </div>
+                      <div class="tax-row"><span>CIF (FOB × 1,04)</span><strong>R$ 70.252,00</strong></div>
+                      <div class="tax-row"><span>II 14,0%</span><strong>R$ 9.835,28</strong></div>
+                      <div class="tax-row"><span>IPI 5,0%</span><strong>R$ 4.004,36</strong></div>
+                      <div class="tax-row"><span>PIS 2,10%</span><strong>R$ 1.765,22</strong></div>
+                      <div class="tax-row"><span>COFINS 9,65%</span><strong>R$ 8.112,68</strong></div>
+                      <div class="tax-row"><span>ICMS-SP 12%</span><strong>R$ 13.248,91</strong></div>
+                      <div class="tax-total"><span>Total tributos</span><strong>R$ 36.966,45</strong></div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <!-- Item 2 -->
+              <tr>
+                <td class="c" style="color:var(--text-3)">▾</td>
+                <td style="font-weight:600;font-size:11px;color:var(--text-3)">02</td>
+                <td>
+                  <div style="font-weight:600;font-size:12px">Bomba centrífuga estágio único</div>
+                  <div style="font-size:10px;color:var(--text-3)">P/N: KSB-ETANORM-80-200</div>
+                </td>
+                <td>
+                  <span class="ncm-chip">8413.70.90</span>
+                  <span class="reclassified" style="margin-left:4px;font-size:9px">↑ 8413.91.00</span>
+                </td>
+                <td class="r mono">185,0</td>
+                <td class="r mono">3</td>
+                <td class="r mono">8.200,00</td>
+                <td class="r mono" style="font-weight:600">14,0%</td>
+                <td class="r mono">0,0%</td>
+                <td class="r mono" style="font-weight:700;color:var(--danger)">38,7%</td>
+                <td class="c"><span class="pill pill-red">Revisar</span></td>
+              </tr>
+              <!-- Item 3 -->
+              <tr>
+                <td class="c" style="color:var(--text-3)">▾</td>
+                <td style="font-weight:600;font-size:11px;color:var(--text-3)">03</td>
+                <td>
+                  <div style="font-weight:600;font-size:12px">Filtro de membrana PVDF 0,2µm</div>
+                  <div style="font-size:10px;color:var(--text-3)">P/N: MILLIPORE-PVDF-220</div>
+                </td>
+                <td>
+                  <span class="ncm-chip">8421.29.90</span>
+                </td>
+                <td class="r mono">12,5</td>
+                <td class="r mono">50</td>
+                <td class="r mono">3.100,00</td>
+                <td class="r mono" style="font-weight:600">12,6%</td>
+                <td class="r mono">0,0%</td>
+                <td class="r mono" style="font-weight:700;color:var(--success)">43,0%</td>
+                <td class="c"><span class="pill pill-green">Validado</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sticky-bar">
+        <div class="sticky-bar-info">
+          <strong>1 validado</strong> · 2 a revisar · Economia projetada: <strong>R$ 18.740,00</strong>
+        </div>
+        <div class="sticky-bar-actions">
+          <button class="btn btn-outline">Aprovar Todos</button>
+          <button class="btn btn-dark">Transmitir para Siscomex</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ COMPARATIVO ══ -->
+    <div class="screen" id="screen-comparativo">
+      <div class="page-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="pill pill-blue">Auditoria Tributária Comparativa</span>
+            <span style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace">invoice_test_001.pdf</span>
+          </div>
+          <h1 class="page-title" style="margin-top:4px">Revisão e Comparativo Tributário</h1>
+          <p class="page-subtitle">3 itens analisados · 2 com divergência de enquadramento NCM</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline">Ver Tabela Consolidada</button>
+          <button class="btn btn-dark">↓ Exportar Relatório</button>
+        </div>
+      </div>
+
+      <div class="eco-box">
+        <div class="eco-main">
+          <div class="eco-icon">
+            <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+          </div>
+          <div>
+            <div class="eco-label">Economia Projetada (12 embarques)</div>
+            <div class="eco-value">R$ 224.880,00 <span>/ ano</span></div>
+            <div class="eco-sub">Baseado no volume deste embarque, projetado para 12 operações anuais com alíquotas TEC 2026.</div>
+          </div>
+        </div>
+        <div class="eco-stats">
+          <div class="eco-stat">
+            <div class="eco-stat-label">Redução Média</div>
+            <div class="eco-stat-value">-13,4 p.p.</div>
+          </div>
+          <div class="eco-stat">
+            <div class="eco-stat-label">Esta Operação</div>
+            <div class="eco-stat-value" style="color:var(--text);font-size:14px">R$ 18.740,00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 1: PLC -->
+      <div class="comp-card">
+        <div class="comp-card-header">
+          <div>
+            <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;font-family:'JetBrains Mono',monospace">Item 01 · SIMATIC-S7-1200</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-top:2px">Controlador programável PLC</div>
+          </div>
+          <span class="pill pill-green">Economia: R$ 12.350,00 nesta operação</span>
+        </div>
+        <div class="comp-grid">
+          <div class="comp-side old">
+            <div class="comp-side-label">Enquadramento Anterior</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div class="comp-ncm">NCM 8537.10.99</div>
+              <span class="pill pill-red" style="font-size:9px">Carga Elevada</span>
+            </div>
+            <div class="comp-aliq">II: 14,0% · IPI: 5,0% · PIS: 2,10% · COFINS: 9,65% · ICMS-SP: 12%</div>
+            <div class="comp-carga">
+              <span class="comp-carga-label">Carga Tributária Efetiva:</span>
+              <span class="comp-carga-val">65,5%</span>
+            </div>
+          </div>
+          <div class="comp-center">
+            <div class="comp-arrow">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </div>
+            <div class="comp-delta">-13,4 p.p.</div>
+            <div class="comp-delta-label">diferença</div>
+          </div>
+          <div class="comp-side new">
+            <div class="comp-side-label">Recomendação SAVE NCM</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div class="comp-ncm">NCM 8537.10.20</div>
+              <span class="pill pill-green" style="font-size:9px">Otimizado</span>
+            </div>
+            <div class="comp-aliq" style="color:var(--text-2)">II: 14,0% · IPI: 5,0% · PIS: 2,10% · COFINS: 9,65% · ICMS-SP: 12%</div>
+            <div class="comp-carga">
+              <span class="comp-carga-label">Carga Tributária Efetiva:</span>
+              <span class="comp-carga-val">52,1%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Bomba — NCM anterior inválido -->
+      <div class="comp-card">
+        <div class="comp-card-header">
+          <div>
+            <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;font-family:'JetBrains Mono',monospace">Item 02 · KSB-ETANORM-80-200</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-top:2px">Bomba centrífuga estágio único</div>
+          </div>
+        </div>
+        <div class="amber-warn">
+          <svg width="16" height="16" fill="none" stroke="#B45309" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span>NCM anterior <strong style="font-family:'JetBrains Mono',monospace">8413.91.00</strong> não localizado na TEC 2026 — código inválido ou desatualizado. Comparativo tributário não disponível para este item.</span>
+        </div>
+        <div class="comp-side new" style="margin-top:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div>
+              <div class="comp-side-label" style="margin-bottom:2px">Recomendação SAVE NCM</div>
+              <div class="comp-ncm">NCM 8413.70.90</div>
+            </div>
+            <span class="pill pill-green" style="font-size:9px">Otimizado</span>
+          </div>
+          <div class="comp-aliq" style="color:var(--text-2)">II: 14,0% · IPI: 0,0% · PIS: 2,10% · COFINS: 9,65%</div>
+          <div class="comp-carga">
+            <span class="comp-carga-label">Carga Tributária Efetiva:</span>
+            <span class="comp-carga-val">38,7%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bar">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="14" height="14" fill="var(--accent)" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          3 itens auditados · 1 com divergência comparável · Enquadramentos amparados nas NESH.
+        </div>
+        <button class="btn btn-primary">Gerar Dossiê Siscomex</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  const screens = {
+    'buscar-ncms':   { label: 'Buscar NCMs',   crumb: 'Buscar NCMs' },
+    'nova-operacao': { label: 'Nova Operação',  crumb: 'Nova Operação' },
+    'resultado':     { label: 'Resultado',      crumb: 'Resultado · invoice_test_001.pdf' },
+    'comparativo':   { label: 'Comparativo',    crumb: 'Comparativo · invoice_test_001.pdf' },
+    'perfil':        { label: 'Perfil Fiscal',  crumb: 'Perfil Fiscal' },
+  }
+
+  function show(id, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+    const el = document.getElementById('screen-' + id)
+    if (el) el.classList.add('active')
+    if (btn) btn.classList.add('active')
+    const info = screens[id]
+    if (info) document.getElementById('breadcrumb').innerHTML =
+      `SAVE NCM &rsaquo; <span>${info.crumb}</span>`
+  }
+</script>
