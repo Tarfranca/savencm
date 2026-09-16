@@ -41,3 +41,5 @@ yarn-error.log*
 next-env.d.ts
 test_pipeline.mjs
 test_pipeline.mjs
+
+dev.log
