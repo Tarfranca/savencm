@@ -426,7 +426,7 @@ export default function ResultadoClient({
                             </div>
                             <div className="flex items-center gap-2">
                               <Link
-                                href="/buscar-ncms"
+                                href={`/buscar-ncms?item_id=${item.id}&item_desc=${encodeURIComponent(item.descricao_comercial)}`}
                                 onClick={e => e.stopPropagation()}
                                 className="px-2.5 py-1 text-xs border border-slate-300 rounded hover:bg-white text-slate-700 font-medium transition-colors"
                               >

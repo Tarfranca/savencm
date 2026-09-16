@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { aplicarNcmAlternativo, criarItemAvulso } from './actions'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ExTarifario = {
@@ -32,6 +34,164 @@ type SearchResult = {
   mode?: 'initial' | 'rpc' | 'ilike' | 'codigo' | 'empty'
 }
 
+// ── Modal para criação de item avulso ─────────────────────────────────────────
+type ModalAvulsoProps = {
+  ncm: NcmRow
+  onClose: () => void
+  onConfirm: (dados: { descricao: string; quantidade: number; valorFobUsd: number; pesoKg: number | null }) => void
+  isPending: boolean
+}
+
+function ModalAvulso({ ncm, onClose, onConfirm, isPending }: ModalAvulsoProps) {
+  const [descricao, setDescricao] = useState('')
+  const [quantidade, setQuantidade] = useState('1')
+  const [valorFob, setValorFob] = useState('')
+  const [pesoKg, setPesoKg] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!descricao.trim() || !valorFob || parseFloat(valorFob) <= 0) return
+    onConfirm({
+      descricao: descricao.trim(),
+      quantidade: Math.max(1, parseInt(quantidade) || 1),
+      valorFobUsd: parseFloat(valorFob),
+      pesoKg: pesoKg ? parseFloat(pesoKg) : null,
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Modal */}
+      <div className="relative bg-white rounded-xl shadow-2xl border border-[#E2E8F0] w-full max-w-md z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Criar item com este NCM</h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              NCM <span className="font-mono font-bold text-slate-700">{ncm.codigo}</span>
+              {' '}— {ncm.descricao.slice(0, 60)}{ncm.descricao.length > 60 ? '…' : ''}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Tax preview pill */}
+        <div className="mx-5 mt-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-600 font-mono flex items-center justify-between">
+          <span>II {ncm.ii_aliquota.toFixed(1)}% · IPI {ncm.ipi_aliquota.toFixed(1)}%</span>
+          <span className="font-bold text-[#047857]">Carga efetiva: {ncm.carga_efetiva.toFixed(1)}%</span>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+              Descrição comercial <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={descricao}
+              onChange={e => setDescricao(e.target.value)}
+              placeholder="Ex: Válvula de esfera de latão, PN16, DN25"
+              required
+              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#2563EB] bg-slate-50 focus:bg-white transition-all"
+              autoFocus
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Quantidade <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={quantidade}
+                onChange={e => setQuantidade(e.target.value)}
+                min="1"
+                step="1"
+                required
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#2563EB] bg-slate-50 focus:bg-white transition-all font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Valor FOB (USD) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={valorFob}
+                onChange={e => setValorFob(e.target.value)}
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                required
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#2563EB] bg-slate-50 focus:bg-white transition-all font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+              Peso líquido (kg) <span className="text-slate-400 font-normal">— opcional</span>
+            </label>
+            <input
+              type="number"
+              value={pesoKg}
+              onChange={e => setPesoKg(e.target.value)}
+              min="0"
+              step="0.001"
+              placeholder="0.000"
+              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#2563EB] bg-slate-50 focus:bg-white transition-all font-mono"
+            />
+          </div>
+
+          <div className="pt-2 flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="px-4 py-2 text-xs font-semibold border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isPending || !descricao.trim() || !valorFob}
+              className="px-4 py-2 text-xs font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-sm"
+            >
+              {isPending ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Salvando…
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Criar e ver resultado
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const QUICK_CHIPS_DESCRICAO = ['filtro', 'bomba centrífuga', 'painel elétrico', 'válvula']
 const QUICK_CHIPS_CODIGO = ['8421.29.90', '8413', '8537.10', '8481']
@@ -46,7 +206,14 @@ function capituloLabel(cap: string): string {
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-export default function BuscarNcmsClient() {
+export default function BuscarNcmsClient({
+  itemId,
+  itemDescricao,
+}: {
+  itemId?: string
+  itemDescricao?: string
+}) {
+  const router = useRouter()
   const [mode, setMode] = useState<'descricao' | 'codigo'>('descricao')
   const [input, setInput] = useState('')
   const [query, setQuery] = useState('')
@@ -57,8 +224,12 @@ export default function BuscarNcmsClient() {
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [toast, setToast] = useState<string | null>(null)
-  const [, startTransition] = useTransition()
+  const [modalNcm, setModalNcm] = useState<NcmRow | null>(null)
+  const [isPending, startTransition] = useTransition()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Cenário A: veio de um item existente
+  const modoSubstituicao = !!itemId
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -82,10 +253,8 @@ export default function BuscarNcmsClient() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      startTransition(() => {
-        setQuery(input)
-        setPage(1)
-      })
+      setQuery(input)
+      setPage(1)
     }, 350)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [input])
@@ -95,14 +264,12 @@ export default function BuscarNcmsClient() {
     search(query, mode, page)
   }, [query, mode, page, search])
 
-  const handleChip = (chip: string) => {
-    setInput(chip)
-  }
+  const handleChip = (chip: string) => { setInput(chip) }
 
   const handleModeSwitch = (m: typeof mode) => {
     setMode(m)
     setInput('')
-    setQuery('')   // immediately clear so useEffect doesn't fire with stale query + new mode
+    setQuery('')
     setResults([])
     setTotal(0)
     setPage(1)
@@ -112,7 +279,31 @@ export default function BuscarNcmsClient() {
     setExpanded(prev => ({ ...prev, [codigo]: !prev[codigo] }))
   }
 
+  // ── Handlers para botões "Usar" ──────────────────────────────────────────────
+
+  const handleUsarNcm = (row: NcmRow, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (modoSubstituicao) {
+      // Cenário A: aplicar diretamente ao item
+      startTransition(async () => {
+        await aplicarNcmAlternativo(itemId!, row.codigo)
+      })
+    } else {
+      // Cenário B: abrir modal para criar item avulso
+      setModalNcm(row)
+    }
+  }
+
+  const handleConfirmarAvulso = (dados: { descricao: string; quantidade: number; valorFobUsd: number; pesoKg: number | null }) => {
+    if (!modalNcm) return
+    startTransition(async () => {
+      await criarItemAvulso(modalNcm.codigo, dados)
+    })
+  }
+
   const totalPages = Math.ceil(total / 20)
+
+  const btnLabel = modoSubstituicao ? 'Aplicar a este item' : 'Criar item com este NCM'
 
   return (
     <div className="flex flex-col w-full max-w-[1400px] mx-auto pb-16">
@@ -124,6 +315,31 @@ export default function BuscarNcmsClient() {
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
           {toast}
+        </div>
+      )}
+
+      {/* Banner de substituição (Cenário A) */}
+      {modoSubstituicao && (
+        <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <svg className="w-4 h-4 text-[#2563EB] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+            </svg>
+            <div className="min-w-0">
+              <span className="text-xs font-bold text-[#1D4ED8]">Modo substituição — </span>
+              <span className="text-xs text-blue-800">
+                Substituindo NCM do item:{' '}
+                <strong className="font-semibold">{itemDescricao ?? 'item selecionado'}</strong>
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="shrink-0 px-3 py-1 text-[11px] font-semibold border border-blue-300 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+          >
+            Cancelar
+          </button>
         </div>
       )}
 
@@ -140,15 +356,17 @@ export default function BuscarNcmsClient() {
             Consulta com cruzamento de alíquotas aduaneiras, notas NESH e ex-tarifários ativos
           </p>
         </div>
-        <Link
-          href="/nova-operacao"
-          className="px-3 py-1.5 bg-white border border-[#CBD5E1] text-slate-700 hover:bg-slate-50 rounded text-xs font-semibold transition-colors inline-flex items-center gap-1.5"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          Upload de Invoice
-        </Link>
+        {!modoSubstituicao && (
+          <Link
+            href="/nova-operacao"
+            className="px-3 py-1.5 bg-white border border-[#CBD5E1] text-slate-700 hover:bg-slate-50 rounded text-xs font-semibold transition-colors inline-flex items-center gap-1.5"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Upload de Invoice
+          </Link>
+        )}
       </div>
 
       {/* 2. Search Box */}
@@ -395,13 +613,21 @@ export default function BuscarNcmsClient() {
                         <td className="px-3 py-3 text-center">
                           <button
                             type="button"
-                            onClick={e => { e.stopPropagation(); showToast(`NCM ${row.codigo} copiado para área de transferência!`) }}
-                            className="px-2.5 py-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded text-[11px] font-semibold transition-colors shadow-sm inline-flex items-center gap-1"
+                            disabled={isPending}
+                            onClick={e => handleUsarNcm(row, e)}
+                            className="px-2.5 py-1 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white rounded text-[11px] font-semibold transition-colors shadow-sm inline-flex items-center gap-1 whitespace-nowrap"
                           >
+                            {isPending ? (
+                              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                              </svg>
+                            )}
                             Usar
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                            </svg>
                           </button>
                         </td>
                       </tr>
@@ -486,13 +712,21 @@ export default function BuscarNcmsClient() {
                                   <span className="text-[11px] text-slate-400">Fonte: TEC 2026 / CAMEX</span>
                                   <button
                                     type="button"
-                                    onClick={() => showToast(`NCM ${row.codigo} selecionado para a operação!`)}
-                                    className="px-3 py-1.5 bg-[#004AC6] hover:bg-[#1D4ED8] text-white rounded text-xs font-semibold transition-colors inline-flex items-center gap-1"
+                                    disabled={isPending}
+                                    onClick={e => handleUsarNcm(row, e)}
+                                    className="px-3 py-1.5 bg-[#004AC6] hover:bg-[#1D4ED8] disabled:opacity-50 text-white rounded text-xs font-semibold transition-colors inline-flex items-center gap-1"
                                   >
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Usar este NCM
+                                    {isPending ? (
+                                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                      </svg>
+                                    ) : (
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                    {btnLabel}
                                   </button>
                                 </div>
                               </div>
@@ -566,6 +800,16 @@ export default function BuscarNcmsClient() {
           {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
         </span>
       </div>
+
+      {/* Modal Cenário B */}
+      {modalNcm && (
+        <ModalAvulso
+          ncm={modalNcm}
+          onClose={() => setModalNcm(null)}
+          onConfirm={handleConfirmarAvulso}
+          isPending={isPending}
+        />
+      )}
     </div>
   )
 }
