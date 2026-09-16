@@ -22,12 +22,14 @@ type NcmRow = {
   carga_efetiva: number
   capitulo: string
   ex_tarifario: ExTarifario | null
+  match_type?: string
 }
 
 type SearchResult = {
   results: NcmRow[]
   total: number
   page: number
+  mode?: 'initial' | 'rpc' | 'ilike' | 'codigo' | 'empty'
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -51,6 +53,7 @@ export default function BuscarNcmsClient() {
   const [page, setPage] = useState(1)
   const [results, setResults] = useState<NcmRow[]>([])
   const [total, setTotal] = useState(0)
+  const [searchMode, setSearchMode] = useState<SearchResult['mode']>('initial')
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [toast, setToast] = useState<string | null>(null)
@@ -63,13 +66,13 @@ export default function BuscarNcmsClient() {
   }
 
   const search = useCallback(async (q: string, m: typeof mode, p: number) => {
-    if (!q.trim()) { setResults([]); setTotal(0); return }
     setLoading(true)
     try {
       const res = await fetch(`/api/ncm/search?q=${encodeURIComponent(q)}&mode=${m}&page=${p}`)
       const data: SearchResult = await res.json()
       setResults(data.results ?? [])
       setTotal(data.total ?? 0)
+      setSearchMode(data.mode ?? (q ? 'ilike' : 'initial'))
     } finally {
       setLoading(false)
     }
@@ -222,27 +225,32 @@ export default function BuscarNcmsClient() {
       </div>
 
       {/* 3. Results header */}
-      {query && (
-        <div className="flex items-center justify-between mb-3 px-1">
-          <div className="text-xs text-slate-600">
-            {loading ? (
-              <span className="text-slate-400">Buscando…</span>
-            ) : (
-              <>
-                <strong>{total.toLocaleString('pt-BR')}</strong>{' '}
-                {total === 1 ? 'resultado' : 'resultados'} para{' '}
-                <strong className="text-slate-900">"{query}"</strong>
-                {totalPages > 1 && (
-                  <span className="text-slate-400"> · página {page} de {totalPages}</span>
-                )}
-              </>
-            )}
-          </div>
-          <div className="text-xs text-slate-400">
-            Regime: <strong>Lucro Real — SP</strong>
-          </div>
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="text-xs text-slate-600">
+          {loading ? (
+            <span className="text-slate-400">Buscando…</span>
+          ) : searchMode === 'initial' ? (
+            <span className="text-slate-500">
+              <strong>{results.length}</strong> NCMs frequentes em importação — comece a digitar para filtrar
+            </span>
+          ) : (
+            <>
+              <strong>{total.toLocaleString('pt-BR')}</strong>{' '}
+              {total === 1 ? 'resultado' : 'resultados'} para{' '}
+              <strong className="text-slate-900">"{query}"</strong>
+              {searchMode === 'rpc' && (
+                <span className="ml-1 text-[11px] text-emerald-600 font-medium">(full-text + fuzzy)</span>
+              )}
+              {totalPages > 1 && (
+                <span className="text-slate-400"> · página {page} de {totalPages}</span>
+              )}
+            </>
+          )}
         </div>
-      )}
+        <div className="text-xs text-slate-400">
+          Regime: <strong>Lucro Real — SP</strong>
+        </div>
+      </div>
 
       {/* 4. Results table */}
       <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden mb-4">
@@ -281,17 +289,7 @@ export default function BuscarNcmsClient() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E2E8F0] text-xs">
-              {!query ? (
-                <tr>
-                  <td colSpan={10} className="py-16 text-center text-slate-400">
-                    <svg className="w-10 h-10 text-slate-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <p className="text-sm font-medium text-slate-400">Digite um termo acima para iniciar a busca</p>
-                    <p className="text-xs text-slate-300 mt-1">Experimente os exemplos clicáveis ou pesquise livremente</p>
-                  </td>
-                </tr>
-              ) : loading ? (
+              {loading ? (
                 <tr>
                   <td colSpan={10} className="py-12 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
@@ -346,7 +344,14 @@ export default function BuscarNcmsClient() {
 
                         {/* Descrição + capítulo */}
                         <td className="px-3 py-3">
-                          <div className="font-medium text-slate-900 leading-snug">{row.descricao}</div>
+                          <div className="font-medium text-slate-900 leading-snug flex items-start gap-1.5 flex-wrap">
+                            {row.descricao}
+                            {row.match_type === 'trgm' && (
+                              <span className="inline-flex items-center px-1.5 py-0 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0 mt-0.5">
+                                fuzzy
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[11px] text-slate-400 mt-0.5">{capituloLabel(row.capitulo)}</div>
                         </td>
 
@@ -505,7 +510,7 @@ export default function BuscarNcmsClient() {
       </div>
 
       {/* 5. Pagination */}
-      {query && totalPages > 1 && (
+      {query && searchMode !== 'initial' && totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mb-6">
           <button
             type="button"

@@ -16,71 +16,9 @@ function calcCargaEfetiva(ii: number, ipi: number): number {
   return parseFloat(((ii_v + ipi_v + pis_v + cofins_v + icms_v) / cif * 100).toFixed(1))
 }
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl
-  const q = searchParams.get('q')?.trim() ?? ''
-  const mode = searchParams.get('mode') ?? 'descricao'
-  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'))
-
-  if (!q) return NextResponse.json({ results: [], total: 0, page })
-
-  const supabase = await createClient()
-  const from = (page - 1) * PAGE_SIZE
-  const to = from + PAGE_SIZE - 1
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query: any = supabase
-    .from('ncm_sh')
-    .select('codigo, descricao, ii_aliquota, ipi_aliquota, pis_aliquota, cofins_aliquota, nesh_nota, ato_legal', { count: 'exact' })
-
-  if (mode === 'codigo') {
-    // Prefix match — strip non-digits/dots for safety
-    const sanitized = q.replace(/[^0-9.]/g, '')
-    query = query.ilike('codigo', `${sanitized}%`)
-  } else {
-    // Description: split into words and AND ilike
-    const words = q
-      .split(/\s+/)
-      .map(w => w.toLowerCase())
-      .filter(w => w.length > 2)
-      .slice(0, 5)
-    if (words.length === 0) return NextResponse.json({ results: [], total: 0, page })
-    for (const word of words) {
-      query = query.ilike('descricao', `%${word}%`)
-    }
-  }
-
-  const { data: ncms, count, error } = await query
-    .order('codigo')
-    .range(from, to)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const codes = ((ncms ?? []) as any[]).map(r => r.codigo)
-
-  // Batch-fetch ex_tarifarios for these NCM codes
-  const exMap: Record<string, { tipo: string | null; aliquota: number; descricao: string }> = {}
-  if (codes.length > 0) {
-    const today = new Date().toISOString().split('T')[0]
-    const { data: exRows } = await supabase
-      .from('ex_tarifarios')
-      .select('ncm, tipo, aliquota_ii_reduzida, descricao, vigencia_fim')
-      .in('ncm', codes)
-      .or(`vigencia_fim.is.null,vigencia_fim.gte.${today}`)
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const ex of ((exRows ?? []) as any[])) {
-      exMap[ex.ncm] = {
-        tipo: ex.tipo ?? null,
-        aliquota: ex.aliquota_ii_reduzida ?? 0,
-        descricao: ex.descricao ?? '',
-      }
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const results = ((ncms ?? []) as any[]).map(r => ({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapRow(r: any, matchType?: string) {
+  return {
     codigo: r.codigo as string,
     descricao: r.descricao as string,
     ii_aliquota: r.ii_aliquota ?? 0,
@@ -91,8 +29,132 @@ export async function GET(req: NextRequest) {
     ato_legal: r.ato_legal ?? null,
     carga_efetiva: calcCargaEfetiva(r.ii_aliquota ?? 0, r.ipi_aliquota ?? 0),
     capitulo: r.codigo?.slice(0, 2) ?? '',
-    ex_tarifario: exMap[r.codigo] ?? null,
-  }))
+    match_type: matchType ?? r.match_type ?? 'ilike',
+  }
+}
 
-  return NextResponse.json({ results, total: count ?? 0, page })
+const SELECT_COLS =
+  'codigo, descricao, ii_aliquota, ipi_aliquota, pis_aliquota, cofins_aliquota, nesh_nota, ato_legal'
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = req.nextUrl
+  const q = searchParams.get('q')?.trim() ?? ''
+  const mode = searchParams.get('mode') ?? 'descricao'
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'))
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
+  const supabase = await createClient()
+
+  // ── Code-prefix search (unchanged) ──────────────────────────────────────────
+  if (mode === 'codigo') {
+    const sanitized = q.replace(/[^0-9.]/g, '')
+    if (!sanitized) return NextResponse.json({ results: [], total: 0, page, mode: 'initial' })
+
+    const { data, count, error } = await supabase
+      .from('ncm_sh')
+      .select(SELECT_COLS, { count: 'exact' })
+      .ilike('codigo', `${sanitized}%`)
+      .order('codigo')
+      .range(from, to)
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    const codes = (data ?? []).map(r => r.codigo)
+    const exMap = await fetchExMap(supabase, codes)
+    const results = (data ?? []).map(r => ({ ...mapRow(r, 'codigo'), ex_tarifario: exMap[r.codigo] ?? null }))
+    return NextResponse.json({ results, total: count ?? 0, page, mode: 'codigo' })
+  }
+
+  // ── Descrição: empty query → initial popular NCMs ──────────────────────────
+  if (!q) {
+    const { data, error } = await supabase
+      .from('ncm_sh')
+      .select(SELECT_COLS)
+      .or('codigo.ilike.84%,codigo.ilike.85%,codigo.ilike.90%,codigo.ilike.73%,codigo.ilike.39%')
+      .order('codigo')
+      .limit(PAGE_SIZE)
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    const codes = (data ?? []).map(r => r.codigo)
+    const exMap = await fetchExMap(supabase, codes)
+    const results = (data ?? []).map(r => ({ ...mapRow(r, 'initial'), ex_tarifario: exMap[r.codigo] ?? null }))
+    return NextResponse.json({ results, total: results.length, page: 1, mode: 'initial' })
+  }
+
+  // ── Descrição: full-text + fuzzy via RPC ────────────────────────────────────
+  const { data: rpcData, error: rpcError } = await supabase.rpc('search_ncm', {
+    query_text: q,
+    lim: PAGE_SIZE,
+    off: from,
+  })
+
+  // If RPC exists and returned data → use it
+  if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+    const codes = rpcData.map((r: { codigo: string }) => r.codigo)
+    const exMap = await fetchExMap(supabase, codes)
+    const results = rpcData.map((r: Record<string, unknown>) => ({
+      ...mapRow(r),
+      ex_tarifario: exMap[r.codigo as string] ?? null,
+    }))
+    return NextResponse.json({ results, total: results.length, page, mode: 'rpc' })
+  }
+
+  // Fallback: ilike multi-word (works before migration; accent-insensitive via RPC after migration)
+  const words = q
+    .split(/\s+/)
+    .map(w => w.toLowerCase())
+    .filter(w => w.length > 2)
+    .slice(0, 5)
+
+  if (words.length === 0) return NextResponse.json({ results: [], total: 0, page, mode: 'empty' })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let fallback: any = supabase
+    .from('ncm_sh')
+    .select(SELECT_COLS, { count: 'exact' })
+
+  for (const word of words) {
+    fallback = fallback.ilike('descricao', `%${word}%`)
+  }
+
+  const { data: fallbackData, count, error: fallbackError } = await fallback
+    .order('codigo')
+    .range(from, to)
+
+  if (fallbackError) return NextResponse.json({ error: fallbackError.message }, { status: 500 })
+
+  const fbCodes = (fallbackData ?? []).map((r: { codigo: string }) => r.codigo)
+  const exMap = await fetchExMap(supabase, fbCodes)
+  const results = (fallbackData ?? []).map((r: Record<string, unknown>) => ({
+    ...mapRow(r, 'ilike'),
+    ex_tarifario: exMap[r.codigo as string] ?? null,
+  }))
+  return NextResponse.json({ results, total: count ?? 0, page, mode: 'ilike' })
+}
+
+// ── Shared helper: batch-fetch ex_tarifários ────────────────────────────────
+async function fetchExMap(
+  supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>,
+  codes: string[],
+) {
+  const exMap: Record<string, { tipo: string | null; aliquota: number; descricao: string }> = {}
+  if (codes.length === 0) return exMap
+
+  const today = new Date().toISOString().split('T')[0]
+  const { data: exRows } = await supabase
+    .from('ex_tarifarios')
+    .select('ncm, tipo, aliquota_ii_reduzida, descricao, vigencia_fim')
+    .in('ncm', codes)
+    .or(`vigencia_fim.is.null,vigencia_fim.gte.${today}`)
+
+  for (const ex of (exRows ?? [])) {
+    exMap[(ex as { ncm: string }).ncm] = {
+      tipo: (ex as { tipo: string | null }).tipo ?? null,
+      aliquota: (ex as { aliquota_ii_reduzida: number }).aliquota_ii_reduzida ?? 0,
+      descricao: (ex as { descricao: string }).descricao ?? '',
+    }
+  }
+  return exMap
 }
