@@ -5,6 +5,30 @@ export const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
 const MODEL = 'gemini-3.6-flash'
 
+async function generateWithRetry(
+  params: Parameters<typeof genAI.models.generateContent>[0],
+  maxRetries = 3,
+): ReturnType<typeof genAI.models.generateContent> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await genAI.models.generateContent(params)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const is429 = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')
+      const retryMatch = msg.match(/retry.*?(\d+)s/i)
+      const waitSec = retryMatch ? parseInt(retryMatch[1]) + 2 : 20
+
+      if (is429 && attempt < maxRetries) {
+        console.warn(`[gemini] 429 rate-limited — aguardando ${waitSec}s (tentativa ${attempt + 1}/${maxRetries})`)
+        await new Promise(r => setTimeout(r, waitSec * 1000))
+        continue
+      }
+      throw err
+    }
+  }
+  throw new Error('Gemini: máximo de retentativas atingido')
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface ExtractedItem {
@@ -42,6 +66,14 @@ export interface ClassificationResult {
 
 const EXTRACTION_PROMPT = `Você é um especialista em comércio exterior brasileiro.
 Analise este documento de importação (invoice, packing list, conhecimento de embarque ou B/L) e extraia todas as informações relevantes.
+
+REGRA CRÍTICA SOBRE ITENS:
+- Extraia CADA linha de produto da invoice como um item SEPARADO no array "items"
+- NUNCA consolide, agrupe ou mescle múltiplas linhas em um único item
+- Mesmo que produtos sejam similares (ex: vários modelos de conexões de cobre), cada linha deve virar um item distinto
+- Se a invoice tiver 15 linhas de produto → o array "items" deve ter exatamente 15 elementos
+- Se a invoice tiver uma tabela com colunas Item/Description/Quantity/Price → cada linha da tabela é um item separado
+- Preserve os valores originais de cada linha (quantidade, preço unitário, total) — não some nem divida
 
 Retorne EXCLUSIVAMENTE um JSON válido no formato abaixo — sem markdown, sem comentários:
 {
@@ -97,7 +129,7 @@ export async function extractInvoiceItems(
     ]
   }
 
-  const response = await genAI.models.generateContent({
+  const response = await generateWithRetry({
     model: MODEL,
     contents: [{ role: 'user', parts }],
     config: { temperature: 0.1 },
@@ -137,7 +169,7 @@ Retorne EXCLUSIVAMENTE um JSON válido — sem markdown, sem comentários:
   "risco": "Baixo"
 }`
 
-  const response = await genAI.models.generateContent({
+  const response = await generateWithRetry({
     model: MODEL,
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: { temperature: 0.1 },
