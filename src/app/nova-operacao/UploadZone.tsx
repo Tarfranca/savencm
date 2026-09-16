@@ -65,6 +65,15 @@ export function UploadZone() {
         </div>
       )}
 
+      {/* Input fora da dropzone para evitar loop de click-bubble */}
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+        accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv"
+      />
+
       {/* Dropzone */}
       <div className="w-full max-w-3xl mx-auto mb-8">
         <div
@@ -78,13 +87,6 @@ export function UploadZone() {
               : 'border-[#CBD5E1] hover:border-[#2563EB]'
           } ${isPending ? 'opacity-60 pointer-events-none' : ''}`}
         >
-          <input
-            ref={inputRef}
-            type="file"
-            className="hidden"
-            onChange={handleFileChange}
-            accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv"
-          />
 
           <div className="flex justify-center mb-3">
             {isPending ? (

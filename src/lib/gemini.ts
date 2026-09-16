@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
+import * as XLSX from 'xlsx'
 
 export const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
@@ -39,13 +40,7 @@ export interface ClassificationResult {
 
 // ─── Extraction ─────────────────────────────────────────────────────────────
 
-export async function extractInvoiceItems(
-  fileBuffer: ArrayBuffer,
-  mimeType: string,
-): Promise<ExtractionResult> {
-  const base64 = Buffer.from(fileBuffer).toString('base64')
-
-  const prompt = `Você é um especialista em comércio exterior brasileiro.
+const EXTRACTION_PROMPT = `Você é um especialista em comércio exterior brasileiro.
 Analise este documento de importação (invoice, packing list, conhecimento de embarque ou B/L) e extraia todas as informações relevantes.
 
 Retorne EXCLUSIVAMENTE um JSON válido no formato abaixo — sem markdown, sem comentários:
@@ -70,17 +65,41 @@ Retorne EXCLUSIVAMENTE um JSON válido no formato abaixo — sem markdown, sem c
   "total_fob": 0.0
 }`
 
+function xlsxToCsv(buffer: ArrayBuffer): string {
+  const wb = XLSX.read(new Uint8Array(buffer), { type: 'array' })
+  return wb.SheetNames
+    .map(name => {
+      const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name])
+      return `=== Aba: ${name} ===\n${csv}`
+    })
+    .join('\n\n')
+}
+
+export async function extractInvoiceItems(
+  fileBuffer: ArrayBuffer,
+  mimeType: string,
+): Promise<ExtractionResult> {
+  const isSpreadsheet =
+    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mimeType === 'application/vnd.ms-excel'
+
+  let parts: object[]
+
+  if (isSpreadsheet) {
+    // Gemini Vision não suporta XLS/XLSX inline — converte para CSV e envia como texto
+    const csvText = xlsxToCsv(fileBuffer)
+    parts = [{ text: `${EXTRACTION_PROMPT}\n\nConteúdo da planilha (CSV):\n${csvText}` }]
+  } else {
+    const base64 = Buffer.from(fileBuffer).toString('base64')
+    parts = [
+      { text: EXTRACTION_PROMPT },
+      { inlineData: { mimeType, data: base64 } },
+    ]
+  }
+
   const response = await genAI.models.generateContent({
     model: MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { text: prompt },
-          { inlineData: { mimeType, data: base64 } },
-        ],
-      },
-    ],
+    contents: [{ role: 'user', parts }],
     config: { temperature: 0.1 },
   })
 

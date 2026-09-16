@@ -12,14 +12,13 @@ const MOEDA_FALLBACK: Record<string, number> = {
 }
 
 async function fetchCambioBCB(moeda: string): Promise<number> {
-  // Try up to 5 business days back (weekends/holidays have no PTAX)
   for (let daysBack = 0; daysBack < 5; daysBack++) {
     const d = new Date()
     d.setDate(d.getDate() - daysBack)
     const mm = String(d.getMonth() + 1).padStart(2, '0')
     const dd = String(d.getDate()).padStart(2, '0')
     const yyyy = d.getFullYear()
-    const dataBCB = `${mm}-${dd}-${yyyy}` // BCB expects MM-DD-YYYY
+    const dataBCB = `${mm}-${dd}-${yyyy}`
 
     try {
       const url =
@@ -92,17 +91,23 @@ export async function POST(
     const cambio = await fetchCambioBCB(moeda)
 
     // ── 5. Atualizar lote com dados extraídos da invoice ─────────────────
+    // Colunas base (sempre existem na tabela)
     await supabase
       .from('lotes')
       .update({
         origem_pais: extraction.origem_pais ?? extraction.origem ?? null,
-        moeda_origem: moeda,
         modal: extraction.modal ?? null,
         incoterm: extraction.incoterm ?? null,
         recinto_alfandegario: extraction.recinto_alfandegario ?? null,
-        estado_desembaraco: extraction.estado_desembaraco ?? null,
         cambio_utilizado: cambio,
       })
+      .eq('id', id)
+
+    // Colunas novas (requerem migration add_lote_embarque_fields.sql)
+    // Falha silenciosa se a migration ainda não foi aplicada
+    await supabase
+      .from('lotes')
+      .update({ moeda_origem: moeda, estado_desembaraco: extraction.estado_desembaraco ?? null })
       .eq('id', id)
 
     // Estado para ICMS: do embarque (identificado pela IA), fallback SP
